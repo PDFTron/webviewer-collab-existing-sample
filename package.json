@@ -1,0 +1,54 @@
+{
+  "scripts": {
+    "start-client": "parcel src/client/index.html",
+    "start-server": "ts-node src/server/index.ts",
+    "clean-data": "rm -r data"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.8",
+    "@types/fs-extra": "^9.0.2",
+    "@types/jsonwebtoken": "^8.5.0",
+    "@types/react-router-dom": "^5.1.6",
+    "parcel": "^1.12.4",
+    "parcel-plugin-static-files-copy": "^2.5.0",
+    "sass": "^1.27.0",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.3"
+  },
+  "dependencies": {
+    "@chakra-ui/core": "^0.8.0",
+    "@emotion/core": "^10.0.35",
+    "@emotion/styled": "^10.0.27",
+    "@pdftron/collab-client": "^0.0.3",
+    "@pdftron/collab-server": "^0.0.3",
+    "@pdftron/webviewer": "^7.1.2",
+    "@types/multer": "^1.4.4",
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
+    "emotion-theming": "^10.0.27",
+    "express": "^4.17.1",
+    "express-form-data": "^2.0.14",
+    "fs-extra": "^9.0.1",
+    "jsonwebtoken": "^8.5.1",
+    "multer": "^1.4.2",
+    "react": ">= 16.6.1",
+    "react-dom": ">= 16.6.1",
+    "react-hook-form": "^6.9.2",
+    "react-router-dom": "^5.2.0",
+    "styled-components": ">= 5.1",
+    "uuid": "^8.3.1"
+  },
+  "staticFiles": {
+    "staticPath": [
+      {
+        "staticPath": "node_modules/@pdftron/webviewer/public",
+        "staticOutDir": "public/webviewer"
+      },
+      {
+        "staticPath": "static",
+        "staticOutDir": "public"
+      }
+    ],
+    "watcherGlob": "**"
+  }
+}
