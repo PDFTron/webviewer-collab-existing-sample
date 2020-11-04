@@ -16,5 +16,6 @@ export const getToken = (user: SerializedUser) => {
 }
 
 export const decodeToken = (token: string): SerializedUser => {
+  if (!token) return null;
   return jwt.verify(token, PRIVATE_KEY) as SerializedUser;
 }
