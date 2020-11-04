@@ -1,5 +1,4 @@
 import fs from 'fs-extra'
-import {  } from 'multer';
 import path from 'path';
 
 const fileStore = path.resolve(__dirname, '../../data/files');

@@ -1,10 +1,13 @@
 import { Box, Button, Flex, Heading, Text, useDisclosure } from '@chakra-ui/core';
-import React, { useCallback, useEffect, useState, useContext } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import useData from '../hooks/useData';
 import type { Document } from '../../server/db';
 import UploadModal from '../components/UploadModal';
 import { useHistory, useParams } from 'react-router-dom';
 import WebViewer, { WebViewerInstance } from '@pdftron/webviewer';
+import CollabClient from '@pdftron/collab-client';
+import TopNav from '../components/TopNav';
+import ClientContext from '../context/client';
 import UserContext from '../context/user';
 
 export default function View() {
@@ -14,7 +17,8 @@ export default function View() {
   const history = useHistory();
   const { id } = useParams<any>();
   const [instance, setInstance] = useState<WebViewerInstance>();
-  const [activeFile, setActiveFile] = useState<Document>()
+  const [activeFile, setActiveFile] = useState<Document>();
+  const client: CollabClient = useContext(ClientContext);
 
   const {
     data: documents = [],
@@ -29,24 +33,35 @@ export default function View() {
       history.push('/login');
     }
   },[user]);
-  
+
   useEffect(() => {
     const ele = document.getElementById('viewer');
     WebViewer({
       path: '/public/webviewer'
-    }, ele).then(instance => {
+    }, ele).then( async instance => {
+      client.setInstance(instance);
+      instance.openElements(['notesPanel']);
       setInstance(instance);
+      client.subscribe('documentChanged', () => {
+        refreshDocuments();
+      })
     })
-  }, [])
+  }, []);
 
   useEffect(() => {
-    if (id && instance) {
-      const file = documents.find(doc => doc.id === id);
-      if (file && activeFile?.id !== file.id) {
-        setActiveFile(file);
-        instance.loadDocument(`http://localhost:3000${file.url}`);
+    const go = async () => {
+      if (id && instance) {
+        const file = documents.find(doc => doc.id === id);
+        if (file && activeFile?.id !== file.id) {
+          setActiveFile(file);
+          await client.loadDocument(`http://localhost:3000${file.url}`, {
+            documentId: file.id,
+            filename: file.name
+          });
+        }
       }
-    }
+    };
+    go();
   }, [id, instance, documents, activeFile])
 
   const selectDocument = useCallback((doc: Document) => {
@@ -55,9 +70,12 @@ export default function View() {
 
   return (
     <Flex height='100%'>
-
       <UploadModal
-        onComplete={refreshDocuments}
+        onComplete={(document) => {
+          refreshDocuments();
+          selectDocument(document);
+        }}
+        client={client}
         onClose={onClose}
         isOpen={isOpen}
       />
@@ -76,7 +94,6 @@ export default function View() {
             })
           }
         </Box>
-
         <Box marginTop='auto' textAlign='center'>
           <Button width='100%' marginBottom='10px' onClick={onOpen}>
             New Document
@@ -86,9 +103,12 @@ export default function View() {
       </Flex>
 
       <Box flexGrow={1} height='100%'>
+        <TopNav 
+          client={client}
+          currentDocument={activeFile}
+        />
         <Box id='viewer'></Box>
       </Box>
-
     </Flex>
   );
 }
