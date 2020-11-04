@@ -13,6 +13,7 @@ export default function SignUp() {
   const history = useHistory();
 
   const onSubmit = async (values) => {
+
     const { password, password2 } = values;
     if (password !== password2) {
       setError('Passwords do not match');
