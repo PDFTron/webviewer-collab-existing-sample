@@ -1,15 +1,17 @@
 import React, { PropsWithChildren, useState, useEffect } from 'react';
 import { Button,FormControl, FormLabel, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalHeader, ModalOverlay } from '@chakra-ui/core';
 import { useForm } from 'react-hook-form';
+import CollabClient from '@pdftron/collab-client';
 
 interface UploadModalProps {
-  onComplete: () => void;
+  onComplete: (doc) => void;
   isOpen: boolean;
   onClose: () => void;
+  client: CollabClient;
 }
 
 export default function UploadModal(props: PropsWithChildren<UploadModalProps>) {
-  const { isOpen, onClose, onComplete } = props;
+  const { isOpen, onClose, onComplete, client} = props;
   const { register, handleSubmit, setValue} = useForm();
   const [name, setName] = useState('');
   const selectedFile = (e) => {
@@ -35,7 +37,16 @@ export default function UploadModal(props: PropsWithChildren<UploadModalProps>) 
       credentials: 'include',
       body: data
     });
-    onComplete();
+    let doc;
+    if(resp.status === 200) {
+      doc = await resp.json();
+      //load here to get document members and annotation members created, so that GET documents can work
+      await client.loadDocument(`http://localhost:3000${doc.url}`, {
+        documentId: doc.id,
+        filename: doc.name
+      });
+    }
+    onComplete(doc);
     onClose();
   }
 

@@ -1,6 +1,8 @@
 import { Box, Spinner } from '@chakra-ui/core';
-import React, { PropsWithChildren, useEffect, useState } from 'react';
+import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import UserContext from '../context/user';
+import ClientContext from '../context/client';
+import CollabClient from '@pdftron/collab-client';
 import { useLocation } from 'react-router-dom';
 
 interface AuthProps {
@@ -13,6 +15,7 @@ export default function Auth({
 
   const [user, setUser] = useState(undefined);
   const [loading, setLoading] = useState(true);
+  const client: CollabClient = useContext(ClientContext);
   const location = useLocation();
 
   useEffect(() => {
@@ -22,12 +25,20 @@ export default function Auth({
       });
       if (resp.status === 200) {
         const json = await resp.json();
-        setUser(json);
+        const {
+          user: authUser,
+          token
+        } = json;
+        if (!user && token) {
+          setUser(authUser);
+          client.loginWithToken(token);
+        }
+
       }
       setLoading(false);
     }
     get();
-  }, [location.pathname])
+  }, [location.pathname]);
 
   return (
     <UserContext.Provider value={user}>

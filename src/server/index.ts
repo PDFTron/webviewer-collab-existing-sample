@@ -1,23 +1,37 @@
 import { getToken, decodeToken, SerializedUser } from './auth';
 import express from 'express';
-import DB from './db';
+import DB, { User, UserTypes } from './db';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { writeFile } from './files';
 import multer from 'multer';
 import path from 'path';
+import { generateResolvers } from './resolvers';
+import CollabServer, { UserAuth } from '@pdftron/collab-server';
+import { writeFile } from './files';
+export { UserAuth };
 
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
 
 const db = new DB();
+const corsOption = {
+  origin: 'http://localhost:1234',
+  credentials: true
+};
+
+const resolvers = generateResolvers(db);
+
+const server = new CollabServer({
+  resolvers,
+  corsOption,
+  getUserFromToken: decodeToken
+});
+
+server.start(8000);
 
 const app = express();
 app.use(express.json());
-app.use(cors({
-  origin: 'http://localhost:1234',
-  credentials: true
-}));
+app.use(cors(corsOption));
 app.use(cookieParser())
 
 app.use('/files', express.static(path.resolve(__dirname, '../../data/files')));
@@ -29,19 +43,29 @@ app.use('/files', express.static(path.resolve(__dirname, '../../data/files')));
  * We also write a 'session' cookie on success
  */
 app.post('/api/signup', (req, res) => {
-
   const { email, password } = req.body;
-
+  //overwrite user if user with the email already exists(in case of invited by other users)
   db.write((data, getId) => {
-    const newUser = {
+    const newUser: User = {
       id: getId(),
       email,
-      password
+      password,
+      type: UserTypes.STANDARD 
     };
-
-    data.users.push(newUser);
-
-    res.cookie('session', getToken({ id: newUser.id, email: newUser.email }));
+    let id = newUser.id;
+    const userIndex = data.users.findIndex(user => user.email === email);
+    if(userIndex !== -1) {
+      const user = data.users[userIndex];
+      data.users[userIndex] = {
+        ...user,
+        password,
+        type: UserTypes.STANDARD
+      }
+      id = user.id;
+    } else {
+      data.users.push(newUser);
+    }
+    res.cookie('session', getToken({ id, email }));
     res.status(200).send({ success: true });
 
     return data;
@@ -81,7 +105,6 @@ app.post('/api/login', (req, res) => {
   return res.status(200).send(rest);
 });
 
-
 const authMiddleware = (req, res, next) => {
   const cookie = req.cookies['session'];
   if (!cookie) {
@@ -103,9 +126,12 @@ const authMiddleware = (req, res, next) => {
  */
 app.get('/api/session', authMiddleware, (req, res) => {
   const user = req.user;
-  return res.status(200).send(user);
+  const token = req.cookies['session'];
+  return res.status(200).send({
+    user,
+    token
+  });
 })
-
 
 /**
  * Get all documents for a user
@@ -114,13 +140,18 @@ app.get('/api/documents', authMiddleware, (req, res) => {
   const user = req.user;
 
   const documents = db.query((data) => {
-    return data.documents.filter(d => d.userId === user.id);
+    //documents exist in db before integration
+    const existingDocs = data.documents.filter(d => d.userId === user.id);
+    let collabDocs = [];
+    const members = data.documentMembers?.filter(documentMember => documentMember.userId === user.id);
+    if(members) {
+      const docs = members.map(member => data.documents?.find(document => document.id === member.documentId));
+      collabDocs = docs.filter( doc => doc.userId !== user.id);
+    } 
+    return [...existingDocs, ...collabDocs];
   });
-
   return res.status(200).send({ documents })
 });
-
-
 
 /**
  * Endpoint to make a new document
@@ -140,14 +171,15 @@ app.post('/api/documents', [authMiddleware, upload.single('file')], (req, res) =
     
     const url = await writeFile(newName, file);
 
-    data.documents.push({
+    const document = {
       userId: user.id,
       id: docId,
       name,
       url
-    });
+    };
+    data.documents.push(document);
 
-    res.status(200).send();
+    res.status(200).send(document);
     return data;
   })
 })

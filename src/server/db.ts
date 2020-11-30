@@ -8,11 +8,16 @@ import { v4 } from 'uuid';
  * In a real world scenerio, this would probably be a SQL driver
  * or something similar.
  */
+export const UserTypes = {
+  STANDARD: 'STANDARD',
+  ANONYMOUS: 'ANONYMOUS'
+} as const;
 
 export type User = {
   id: string;
   email: string;
   password: string;
+  type: typeof UserTypes[keyof typeof UserTypes];
 }
 
 export type Document = {
@@ -22,9 +27,38 @@ export type Document = {
   url: string
 }
 
+export type Annotation = {
+  id: string;
+  xfdf: string;
+  authorId: string;
+  documentId: string;
+  pageNumber: number;
+  createdAt: number;
+  inReplyTo?: string;
+}
+
+export type DocumentMember = {
+  id: string;
+  userId: string;
+  documentId: string;
+  lastRead: number;
+}
+
+export type AnnotationMember = {
+  id: string;
+  userId: string;
+  documentId: string;
+  annotationId: string;
+  lastRead: number;
+  createdAt: number;
+}
+
 type DatabaseShape = {
   users: User[];
-  documents: Document[]
+  documents: Document[];
+  annotations: Annotation[];
+  documentMembers: DocumentMember[];
+  annotationMembers: AnnotationMember[];
 }
 
 const dataLocation = path.resolve(__dirname, '../../data/database.json');
@@ -44,7 +78,12 @@ export default class DB {
       const rawData = fs.readFileSync(dataLocation) + '';
       this.db = JSON.parse(rawData);
     } else {
-      this.db = { users: [], documents: [] };
+      this.db = { users: [], 
+                  documents: [],
+                  annotations: [],
+                  documentMembers: [],
+                  annotationMembers: [] 
+                };
       this.writeToFile();
     }
   }
