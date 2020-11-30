@@ -50,6 +50,7 @@ export type AnnotationMember = {
   documentId: string;
   annotationId: string;
   lastRead: number;
+  createdAt: number;
 }
 
 type DatabaseShape = {
