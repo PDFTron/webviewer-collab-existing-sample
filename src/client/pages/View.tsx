@@ -8,7 +8,7 @@ import WebViewer, { WebViewerInstance } from '@pdftron/webviewer';
 import UserContext from '../context/user';
 
 export default function View() {
-  
+
   const user = useContext(UserContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const history = useHistory();
@@ -29,7 +29,7 @@ export default function View() {
       history.push('/login');
     }
   },[user]);
-  
+
   useEffect(() => {
     const ele = document.getElementById('viewer');
     WebViewer({
@@ -44,7 +44,7 @@ export default function View() {
       const file = documents.find(doc => doc.id === id);
       if (file && activeFile?.id !== file.id) {
         setActiveFile(file);
-        instance.loadDocument(`http://localhost:3000${file.url}`);
+        instance.UI.loadDocument(`http://localhost:3000${file.url}`);
       }
     }
   }, [id, instance, documents, activeFile])
