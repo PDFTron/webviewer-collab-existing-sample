@@ -32,9 +32,9 @@ export type User = {
 
 export type Document = {
   id: string;
-  createdAt: number;
   authorId: string;
-  updated_at: number;
+  createdAt: number;
+  updatedAt: number;
   isPublic: boolean;
   name: string;
 };
@@ -82,7 +82,7 @@ export type Mention = {
   updatedAt: number;
 };
 
-type DatabaseShape = {
+export type DatabaseShape = {
   users: User[];
   documents: Document[];
   annotations: Annotation[];
