@@ -48,14 +48,14 @@ export const generateResolvers = (db: DB): UserResolvers => {
         return rest;
       },
       documents: ({
-        filters,
+        filters = {},
         ids,
         userId,
       }) => {
         const { limit } = filters;
         const documents = db.query((data) => {
           let filteredList = sortListByFilters(data.documents, filters)
-          
+
           if (ids) {
             filteredList = filteredList.filter(item => {
               return ids.includes(item.id);
@@ -64,7 +64,7 @@ export const generateResolvers = (db: DB): UserResolvers => {
 
           if (userId) {
             filteredList = filteredList.filter(item => {
-              return item.userId = userId;
+              return item.authorId = userId;
             })
           }
 
@@ -81,7 +81,7 @@ export const generateResolvers = (db: DB): UserResolvers => {
         documentId,
         pageNumbers,
         inReplyTo,
-        filters
+        filters = {}
       }) => {
         const { limit } = filters;
 
@@ -125,7 +125,7 @@ export const generateResolvers = (db: DB): UserResolvers => {
         ids,
         annotationId,
         userId,
-        filters
+        filters = {}
       }) => {
         const { limit } = filters;
         const annotationMembers = db.query((data) => {
@@ -161,7 +161,7 @@ export const generateResolvers = (db: DB): UserResolvers => {
         ids,
         documentId,
         userId,
-        filters
+        filters = {}
       }) => {
         const { limit } = filters;
         const documentMembers = db.query((data) => {
@@ -192,6 +192,49 @@ export const generateResolvers = (db: DB): UserResolvers => {
           return filteredList
         });
         return documentMembers;
+      },
+      mentions: ({
+        annotationId,
+        userId,
+        documentId,
+        ids,
+        filters = {}
+      }) => {
+        const { limit } = filters;
+        const mentions = db.query((data) => {
+          let filteredList = sortListByFilters(data.mentions, filters);
+
+          if (ids) {
+            filteredList = filteredList.filter(item => {
+              return ids.includes(item.id);
+            })
+          }
+
+          if (documentId) {
+            filteredList = filteredList.filter(item => {
+              return item.documentId === documentId
+            })
+          }
+
+          if (annotationId) {
+            filteredList = filteredList.filter(item => {
+              return item.annotationId === annotationId
+            })
+          }
+
+          if (userId) {
+            filteredList = filteredList.filter(item => {
+              return item.userId === userId
+            })
+          }
+
+          if (limit) {
+            filteredList = filteredList.slice(0, limit);
+          }
+
+          return filteredList
+        });
+        return mentions;
       },
       annotationCount: ({
         documentId,
@@ -287,9 +330,9 @@ export const generateResolvers = (db: DB): UserResolvers => {
             newDocument= {
               ...document,
                 id: document.id || getId()
-              } 
+              }
               data.documents.push(newDocument);
-          }                
+          }
           return data;
         });
         const { members, annotations, ...doc } = newDocument;
@@ -305,7 +348,7 @@ export const generateResolvers = (db: DB): UserResolvers => {
               ...input
             };
             data.documents[index] = document;
-          }     
+          }
           return data;
         });
         return document;
@@ -329,10 +372,10 @@ export const generateResolvers = (db: DB): UserResolvers => {
         return result;
       },
     addDocumentMember: async (documentMember) => {
-        const { user, ...member } = documentMember;
+        const { ...member } = documentMember;
         let newDocumentMember;
         await db.write((data, getId) => {
-          const existingMember = data.documentMembers.find(m => 
+          const existingMember = data.documentMembers.find(m =>
             m.documentId === member.documentId &&
             m.userId === member.userId);
           if(!existingMember) {
@@ -379,7 +422,7 @@ export const generateResolvers = (db: DB): UserResolvers => {
         return result;
       },
       addAnnotationMember: async (annotationMember) => {
-        const { user, ...member } = annotationMember;
+        const { ...member } = annotationMember;
         let newAnnotationMember;
           await db.write((data, getId) => {
               newAnnotationMember = {
@@ -421,7 +464,52 @@ export const generateResolvers = (db: DB): UserResolvers => {
           return data;
         });
         return result;
-      }
+      },
+      addMention: async (mention) => {
+        let newMention;
+          await db.write((data, getId) => {
+              newMention = {
+                ...mention,
+                id: mention.id || getId()
+              }
+              data.mentions.push(newMention);
+              return data;
+          });
+        return newMention;
+      },
+      editMention: async (id, input) => {
+        let mention;
+        await db.write((data) => {
+          const index = data.mentions.findIndex(annot => annot.id === id);
+          if( index !== -1) {
+            mention = {
+              ...data.mentions[index],
+              ...input
+            };
+            data.mentions[index] = mention;
+          }
+          return data;
+        });
+        return mention;
+      },
+      deleteMention: async (id) => {
+        let result;
+        await db.write((data) => {
+          const index = data.mentions.findIndex(annot => annot.id === id);
+          if(index === -1) {
+            result = {
+              successful: false
+            }
+          } else {
+            data.mentions.splice(index, 1);
+            result = {
+              successful: true
+            }
+          }
+          return data;
+        });
+        return result;
+      },
     }
   }
 }
