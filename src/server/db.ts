@@ -37,6 +37,7 @@ export type Document = {
   updatedAt: number;
   isPublic: boolean;
   name: string;
+  url?: string;
 };
 
 export type Annotation = {
