@@ -27,7 +27,8 @@ const resolvers = generateResolvers(db);
 const server = new CollabServer({
   resolvers,
   corsOption,
-  getUserFromToken
+  getUserFromToken,
+  getNow: () => Date.now()
 });
 
 server.start(8000);
@@ -206,15 +207,20 @@ app.post('/api/documents', [authMiddleware, upload.single('file')], (req, res) =
   const { name } = body;
 
   db.write(async (data, getId) => {
+    const docId = getId();
+    const ext = name.split('.').pop();
+    const newName = `${docId}.${ext}`;
+
+    const url = await writeFile(newName, file);
     const document: Document = {
-      id: getId(),
+      id: docId,
       authorId: user.id,
       isPublic: false,
       updatedAt: Date.now(),
       createdAt: Date.now(),
-      name
+      name,
+      url
     };
-    data.documents.push(document);
 
     res.status(200).send(document);
     return data;
