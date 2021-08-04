@@ -30,8 +30,10 @@ export default function UploadModal(props: PropsWithChildren<UploadModalProps>) 
     const { file, name } = values;
     const data = new FormData();
     const fileObj: File = file[0];
+    const user = JSON.stringify(client.currentUser);
     data.append('file', fileObj);
     data.append('name', name);
+    data.append('user', user);
     const resp = await fetch('http://localhost:3000/api/documents', {
       method: 'post',
       credentials: 'include',
@@ -67,10 +69,10 @@ export default function UploadModal(props: PropsWithChildren<UploadModalProps>) 
                 <FormLabel>Name</FormLabel>
                 <Input type='text' name='name' ref={register()} defaultValue={name} />
               </FormControl>
-              
+
               <Button marginTop='10px' type='submit'>Submit</Button>
             </form>
-            
+
           </ModalBody>
         </ModalContent>
       </Modal>

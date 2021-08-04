@@ -11,7 +11,7 @@ import ClientContext from '../context/client';
 import UserContext from '../context/user';
 
 export default function View() {
-  
+
   const user = useContext(UserContext);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const history = useHistory();
@@ -40,7 +40,7 @@ export default function View() {
       path: '/public/webviewer'
     }, ele).then( async instance => {
       client.setInstance(instance);
-      instance.openElements(['notesPanel']);
+      instance.UI.openElements(['notesPanel']);
       setInstance(instance);
       client.subscribe('documentChanged', () => {
         refreshDocuments();
@@ -54,7 +54,7 @@ export default function View() {
         const file = documents.find(doc => doc.id === id);
         if (file && activeFile?.id !== file.id) {
           setActiveFile(file);
-          await client.loadDocument(`http://localhost:3000${file.url}`, {
+          await client.loadDocument(`http://localhost:3000/files/${file.id}.pdf`, {
             documentId: file.id,
             filename: file.name
           });
@@ -103,7 +103,7 @@ export default function View() {
       </Flex>
 
       <Box flexGrow={1} height='100%'>
-        <TopNav 
+        <TopNav
           client={client}
           currentDocument={activeFile}
         />

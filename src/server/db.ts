@@ -13,36 +13,54 @@ export const UserTypes = {
   ANONYMOUS: 'ANONYMOUS'
 } as const;
 
+export const UserStatus = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE'
+} as const;
+
 export type User = {
   id: string;
+  userName: string;
   email: string;
   password: string;
+  status: typeof UserStatus[keyof typeof UserStatus];
   type: typeof UserTypes[keyof typeof UserTypes];
-}
+  customData: string;
+  createdAt: number;
+  updatedAt: number;
+};
 
 export type Document = {
   id: string;
+  authorId: string;
+  createdAt: number;
+  updatedAt: number;
+  isPublic: boolean;
   name: string;
-  userId: string;
-  url: string
-}
+  url?: string;
+};
 
 export type Annotation = {
   id: string;
   xfdf: string;
+  annotContents: string;
   authorId: string;
+  annotationId: string;
   documentId: string;
   pageNumber: number;
   createdAt: number;
+  updatedAt: number;
   inReplyTo?: string;
-}
+};
 
 export type DocumentMember = {
   id: string;
   userId: string;
   documentId: string;
   lastRead: number;
-}
+  createdAt: number;
+  updatedAt: number;
+};
 
 export type AnnotationMember = {
   id: string;
@@ -51,26 +69,37 @@ export type AnnotationMember = {
   annotationId: string;
   lastRead: number;
   createdAt: number;
-}
+  updatedAt: number;
+  annotationCreatedAt: number;
+};
 
-type DatabaseShape = {
+export type Mention = {
+  id: string;
+  userId: string;
+  annotationId: string;
+  documentId: string;
+  readBeforeMention?: boolean;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type DatabaseShape = {
   users: User[];
   documents: Document[];
   annotations: Annotation[];
   documentMembers: DocumentMember[];
   annotationMembers: AnnotationMember[];
-}
+  mentions: Mention[];
+};
 
 const dataLocation = path.resolve(__dirname, '../../data/database.json');
 
 const getId = () => v4();
 
-
 /**
  * A fake database driver for getting and settings items in memory.
  */
 export default class DB {
-
   db: DatabaseShape;
 
   constructor() {
@@ -78,12 +107,14 @@ export default class DB {
       const rawData = fs.readFileSync(dataLocation) + '';
       this.db = JSON.parse(rawData);
     } else {
-      this.db = { users: [], 
-                  documents: [],
-                  annotations: [],
-                  documentMembers: [],
-                  annotationMembers: [] 
-                };
+      this.db = {
+        users: [],
+        documents: [],
+        annotations: [],
+        documentMembers: [],
+        annotationMembers: [],
+        mentions: []
+      };
       this.writeToFile();
     }
   }
@@ -99,14 +130,16 @@ export default class DB {
    */
   query(callback: (db: Readonly<DatabaseShape>) => any) {
     const frozen = Object.freeze({ ...this.db });
-    return callback(frozen)
+    return callback(frozen);
   }
 
   /**
    * Allows user to write to the database.
    * Whatever is returned from the callback is written to file
    */
-  async write(callback: (db: DatabaseShape, getId: () => string) => DatabaseShape|Promise<DatabaseShape>) {
+  async write(
+    callback: (db: DatabaseShape, getId: () => string) => DatabaseShape | Promise<DatabaseShape>
+  ) {
     const clone = { ...this.db };
     const result = await callback(clone, getId);
     this.db = result;

@@ -1,21 +1,50 @@
 /**
  * A file containing basic utilities for JWT authentication
  */
-
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+const saltRounds = 10;
 
-const PRIVATE_KEY = 'abcdef'
+export const User = (data) => ({
+  userName: data.userName || data.email,
+  email: data.email,
+  id: data.id,
+  password: data.password
+});
 
-export type SerializedUser = {
+export type UserAuth = {
   id: string;
-  email: string;
-}
+};
+/**
+ * Uses bcrypt to get a password hash
+ */
+export const getHash = (plainTextPassword: string): Promise<string> => {
+  return new Promise((resolve) =>
+    bcrypt.hash(plainTextPassword, saltRounds, function (err, hash) {
+      resolve(hash);
+    })
+  );
+};
 
-export const getToken = (user: SerializedUser) => {
-  return jwt.sign(user, PRIVATE_KEY);
-}
+/**
+ * Users bcrypt to validate a password hash
+ */
+export const comparePassword = (plainTextPassword: string, hash: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    bcrypt.compare(plainTextPassword, hash, function (err, result) {
+      resolve(result);
+    });
+  });
+};
 
-export const decodeToken = (token: string): SerializedUser => {
-  if (!token) return null;
-  return jwt.verify(token, PRIVATE_KEY) as SerializedUser;
-}
+export const getUserFromToken = async (token: string): Promise<UserAuth> => {
+  if (token) {
+    return new Promise((resolve) => {
+      jwt.verify(token, process.env.COLLAB_KEY, function (err, decoded) {
+        // @ts-ignore
+        resolve(decoded);
+      });
+    });
+  }
+  return null;
+};
