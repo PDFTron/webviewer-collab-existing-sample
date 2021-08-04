@@ -117,7 +117,7 @@ app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
   const user = db.query((data) => {
-    return data.users.find((user) => user.email === email && user.password === password);
+    return data.users.find((user) => user.email === email);
   });
 
   if (!user) {
