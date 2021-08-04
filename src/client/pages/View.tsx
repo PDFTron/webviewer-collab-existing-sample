@@ -54,7 +54,7 @@ export default function View() {
         const file = documents.find(doc => doc.id === id);
         if (file && activeFile?.id !== file.id) {
           setActiveFile(file);
-          await client.loadDocument(`http://localhost:3000${file.url}`, {
+          await client.loadDocument(`http://localhost:3000/files/${file.id}.pdf`, {
             documentId: file.id,
             filename: file.name
           });

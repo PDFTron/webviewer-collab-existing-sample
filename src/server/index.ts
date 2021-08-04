@@ -147,14 +147,14 @@ app.post('/api/login', async (req, res) => {
   return res.status(200).send(rest);
 });
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const token = req.cookies['wv-collab-token'];
   if (!token) {
     return res.status(401).send();
   }
 
   try {
-    const decoded = getUserFromToken(token);
+    const decoded = await getUserFromToken(token);
     req.user = decoded;
   } catch (e) {}
 
